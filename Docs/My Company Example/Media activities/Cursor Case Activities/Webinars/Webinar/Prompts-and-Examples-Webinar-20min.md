@@ -8,7 +8,7 @@
 * Пройдёт в [зуме](https://us06web.zoom.us/j/88230810760?pwd=u3NznwB4T19q5OigtrvpUaOLmhJqCW.1&jst=2)
 * Буду шарить экран ноутбука целиком
 * Убрать всё лишнее с экрана
-* Открыть отдельное окно Comet и там ссылки: Cursor.com (разлогиниться), скрины начиная с Open Folder, WhisprFlow, [GitHub SuperAgent](), EllyAnalytics.com, PowerBI дэшборд и отчёт, AGI.EllyAnalytics.com, скриншот телеграм-канала, что-то про анонс курса
+* Открыть отдельное окно Comet и там ссылки: Cursor.com (разлогиниться), [скрины начиная с Open Folder](https://github.com/VsevolodUstinov/Personal-Super-Agent-Ru/tree/main/Docs/My%20Company%20Example/Media%20activities/Demo%20Templates/screenshots), [WhisprFlow](https://wisprflow.ai/), [GitHub SuperAgent](https://github.com/VsevolodUstinov/Personal-Super-Agent-Ru/blob/main/README.md), [EllyAnalytics.com](https://ellyanalytics.com/), [PowerBI дэшборд и отчёт](https://elly.pw/b2csubsdemo), [AGI.EllyAnalytics.com](https://agi.ellyanalytics.com/), [скриншот телеграм-канала](https://github.com/VsevolodUstinov/Personal-Super-Agent-Ru/blob/main/Docs/My%20Company%20Example/Media%20activities/Demo%20Templates/screenshots/telegram-channel-seva.png), что-то про анонс курса
 * Открыть Cursor на SuperAgent Ru и скачать обновления
 * Выбрать модель Sonnet 4
 
