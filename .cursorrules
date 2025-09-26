@@ -90,6 +90,78 @@ When you need to check if any number falls within a range:
 - Maintain consistency in documentation format
 - Always verify numerical data with appropriate tools
 
+## Client Meeting Follow-Up Format [CANONICAL]
+
+**When creating follow-up documents for client meetings where the client participated**, use the following format:
+
+### Template Structure:
+```markdown
+# Summary: [Client-Name] Project Call
+**Дата звонка**: [DATE]  
+**Участники**: Команда проекта + [Client-Name]  
+**Статус проекта**: [STATUS_EMOJI] [STATUS_TEXT]
+
+---
+
+Спасибо за участие в сегодняшнем статусном звонке! По итогам нашего обсуждения [SUMMARY_TEXT].
+
+[SECOND_PARAGRAPH with "как мы обсудили на звонке" references]
+
+## ✅ [COMPLETED_SECTION]:
+• **[TASK_1]** - [DESCRIPTION_1]
+• **[TASK_2]** - [DESCRIPTION_2]
+• **[TASK_3]** - [DESCRIPTION_3]
+• **[TASK_4]** - [DESCRIPTION_4]
+• **[TASK_5]** - [DESCRIPTION_5]
+
+## 🚀 Следующие шаги (как обсуждали):
+Как договорились на звонке - [NEXT_STEPS_TEXT]
+```
+
+### Key Language Patterns:
+- **Opening**: "Спасибо за участие в сегодняшнем статусном звонке!"
+- **References**: "как мы обсудили на звонке", "как договаривались", "как обсуждали"
+- **Tone**: Collaborative summary, not one-sided report
+- **Format**: 5 bullet points + 2 paragraphs of text
+- **File naming**: `[Client-Name]-Follow-Up-[YYYY-MM-DD].md`
+
+### Reference Example:
+See `Docs/My Company Example/Projects/Client-Beauty2-Follow-Up-2025-11-08.md` for implementation example.
+
+**This format should ONLY be used when the client was a participant in the meeting, not when sending updates to clients who weren't present.**
+
+## Follow-Up Format for Chat Messages [CANONICAL]
+
+**When creating follow-up messages in chat after analyzing project calls**, use this streamlined format:
+
+### Chat Follow-Up Template:
+```markdown
+## Follow-up для [Client-Name]
+
+Спасибо за участие в сегодняшнем статусном звонке! По итогам нашего обсуждения [BRIEF_SUMMARY].
+
+Как мы обсудили на звонке, [KEY_DISCUSSION_POINTS].
+
+### ✅ Завершенные задачи:
+• **[TASK_1]** - [DESCRIPTION_1]  
+• **[TASK_2]** - [DESCRIPTION_2]  
+• **[TASK_3]** - [DESCRIPTION_3]  
+• **[TASK_4]** - [DESCRIPTION_4]  
+• **[TASK_5]** - [DESCRIPTION_5]  
+
+### 🚀 Следующие шаги (как обсуждали):
+Как договорились на звонке - [NEXT_STEPS_BRIEF].
+```
+
+### Key Differences from File Format:
+- **Shorter structure**: Optimized for chat messages, not formal documents
+- **No header metadata**: Skip date/participants/status info
+- **Bullet format**: Use bullet points for completed tasks instead of numbered lists
+- **Brief summaries**: More concise than file versions
+- **Same language patterns**: Maintain "как мы обсудили на звонке" references for authenticity
+
+**Use this format when providing follow-up summaries in chat conversations after analyzing project call files.**
+
 ## Information Architecture & Anti-Hallucination Rules
 
 ### Core Principle
