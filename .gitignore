@@ -1,6 +1,11 @@
 # Telegram bot configuration (contains sensitive tokens)
 scripts/telegram_config.json
 
+# Office 365 configuration (contains sensitive credentials)
+scripts/outlook_config.json
+scripts/outlook_imap_config.json
+scripts/outlook_exchange_config.json
+
 # Python
 __pycache__/
 *.py[cod]
