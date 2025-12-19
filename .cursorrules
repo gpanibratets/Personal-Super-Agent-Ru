@@ -26,10 +26,7 @@ Personal Workspace/
     │   ├── Medical-Records/  # Tests, checkups, prescriptions
     │   ├── Fitness/          # Workouts, progress tracking
     │   └── Goals/            # Health objectives
-    ├── Finance/              # 💰 Personal finance management
-    │   ├── Budget/           # Monthly budgets, expenses
-    │   ├── Investments/      # Portfolio, stocks, crypto
-    │   └── Goals/            # Financial objectives
+    ├── Finance/              # 💰 Personal finance (investments, goals - if needed)
     ├── Learning/             # 🎓 Education & skill development
     │   ├── Courses/          # Online courses, notes
     │   ├── Books/            # Reading lists, summaries
@@ -55,8 +52,6 @@ When you need to check if any number falls within a range:
 
 **Common use cases**:
 - Health metrics (cholesterol, blood sugar, blood pressure)
-- Budget categories (spending within planned ranges)
-- Financial targets (investment performance ranges)
 - Any situation requiring "is X between Y and Z?"
 
 ## General Guidelines
@@ -65,7 +60,7 @@ When you need to check if any number falls within a range:
 - Assist with content creation, research, and analysis
 - Provide helpful suggestions for workspace organization
 - Use web search when research is needed
-- Connect information across different areas (health, finance, learning, etc.)
+- Connect information across different areas (health, learning, etc.)
 
 ## File Management
 - Use clear, descriptive file and folder names
@@ -84,7 +79,7 @@ When you need to check if any number falls within a range:
 - Create cross-references between related content
 
 ## Integration Rules
-- Link related information across Health, Finance, Learning, and Home categories
+- Link related information across Health, Learning, and Home categories
 - Use examples from actual files when providing guidance
 - Suggest automation opportunities with scripts
 - Maintain consistency in documentation format
