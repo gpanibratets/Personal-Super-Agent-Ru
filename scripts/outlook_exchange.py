@@ -20,7 +20,9 @@ from datetime import datetime, timedelta
 # Проверка наличия библиотеки exchangelib
 try:
     from exchangelib import Credentials, Account, Message, Mailbox, FileAttachment
+    from exchangelib import CalendarItem, EWSDateTime, EWSTimeZone
     from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
+    from exchangelib.folders import Calendar
     import requests
     from requests.adapters import HTTPAdapter
 except ImportError:
@@ -316,6 +318,211 @@ def search_emails(account, query, limit=10, folder='inbox'):
         print(f"❌ Ошибка при поиске: {e}")
         return []
 
+def parse_datetime(date_str, default_timezone=None):
+    """Парсит строку даты в EWSDateTime."""
+    try:
+        # Пробуем разные форматы
+        formats = [
+            '%Y-%m-%d %H:%M',
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y-%m-%dT%H:%M:%SZ',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d'
+        ]
+        
+        for fmt in formats:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                # Если нет часового пояса, используем переданный или UTC
+                if default_timezone:
+                    # Создаем timezone-aware datetime
+                    dt_aware = dt.replace(tzinfo=default_timezone)
+                    return EWSDateTime.from_datetime(dt_aware)
+                else:
+                    # Используем UTC по умолчанию
+                    from exchangelib import UTC
+                    dt_aware = dt.replace(tzinfo=UTC)
+                    return EWSDateTime.from_datetime(dt_aware)
+            except ValueError:
+                continue
+        
+        # Если не получилось, пробуем from_string (для ISO форматов)
+        try:
+            return EWSDateTime.from_string(date_str)
+        except:
+            pass
+        
+        # Если все не удалось, возвращаем текущее время
+        if default_timezone:
+            return EWSDateTime.now(tz=default_timezone)
+        else:
+            return EWSDateTime.now()
+    except Exception as e:
+        print(f"⚠️  Ошибка парсинга даты '{date_str}': {e}")
+        if default_timezone:
+            return EWSDateTime.now(tz=default_timezone)
+        else:
+            return EWSDateTime.now()
+
+def list_calendar(account, limit=10, start_date=None, end_date=None):
+    """Получает список событий календаря."""
+    try:
+        calendar = account.calendar
+        tz = account.default_timezone
+        
+        # Определение диапазона дат
+        if start_date:
+            if isinstance(start_date, str):
+                start = parse_datetime(start_date, tz)
+            else:
+                start = start_date
+        else:
+            # По умолчанию - сегодня
+            start = EWSDateTime.now(tz=tz)
+        
+        if end_date:
+            if isinstance(end_date, str):
+                end = parse_datetime(end_date, tz)
+            else:
+                end = end_date
+        else:
+            # По умолчанию - через 30 дней
+            end = start + timedelta(days=30)
+        
+        # Получение событий
+        items = calendar.view(
+            start=start,
+            end=end
+        ).order_by('start')[:limit]
+        
+        print(f"\n📅 События календаря ({start.date()} - {end.date()}):\n")
+        print(f"{'Дата/Время':<25} {'Тема':<50} {'Участники':<30}")
+        print("-" * 105)
+        
+        count = 0
+        for item in items:
+            start_str = item.start.strftime('%Y-%m-%d %H:%M') if item.start else 'N/A'
+            subject = (item.subject[:47] + '...') if item.subject and len(item.subject) > 50 else (item.subject or '(без темы)')
+            
+            # Участники
+            attendees = []
+            if hasattr(item, 'required_attendees') and item.required_attendees:
+                attendees.extend([a.mailbox.email_address for a in item.required_attendees if a.mailbox])
+            if hasattr(item, 'optional_attendees') and item.optional_attendees:
+                attendees.extend([a.mailbox.email_address for a in item.optional_attendees if a.mailbox])
+            attendees_str = ', '.join(attendees[:2]) if attendees else 'Нет участников'
+            if len(attendees) > 2:
+                attendees_str += f' (+{len(attendees)-2})'
+            if len(attendees_str) > 30:
+                attendees_str = attendees_str[:27] + '...'
+            
+            print(f"{start_str:<25} {subject:<50} {attendees_str:<30}")
+            count += 1
+        
+        if count == 0:
+            print("События не найдены.")
+        
+        return list(items)
+        
+    except Exception as e:
+        print(f"❌ Ошибка при получении календаря: {e}")
+        return []
+
+def create_meeting(account, subject, start_time, end_time, attendees=None, body=None, location=None):
+    """Создает встречу в календаре."""
+    try:
+        tz = account.default_timezone
+        
+        # Преобразование времени
+        if isinstance(start_time, str):
+            start = parse_datetime(start_time, tz)
+        else:
+            start = start_time
+        
+        if isinstance(end_time, str):
+            end = parse_datetime(end_time, tz)
+        else:
+            end = end_time
+        
+        # Создание встречи
+        meeting = CalendarItem(
+            account=account,
+            folder=account.calendar,
+            subject=subject,
+            start=start,
+            end=end,
+            body=body or '',
+            location=location or '',
+            required_attendees=[Mailbox(email_address=email) for email in attendees] if attendees else []
+        )
+        
+        # Сохранение и отправка приглашений
+        meeting.save(send_meeting_invitations='SendToAllAndSaveCopy')
+        
+        print(f"✅ Встреча успешно создана!")
+        print(f"   Тема: {subject}")
+        print(f"   Время: {start.strftime('%Y-%m-%d %H:%M')} - {end.strftime('%Y-%m-%d %H:%M')}")
+        if attendees:
+            print(f"   Участники: {', '.join(attendees)}")
+        if location:
+            print(f"   Место: {location}")
+        
+        return meeting
+        
+    except Exception as e:
+        print(f"❌ Ошибка при создании встречи: {e}")
+        return None
+
+def search_calendar(account, query, limit=10, start_date=None, end_date=None):
+    """Ищет события в календаре по запросу."""
+    try:
+        calendar = account.calendar
+        tz = account.default_timezone
+        
+        # Определение диапазона дат
+        if start_date:
+            if isinstance(start_date, str):
+                start = parse_datetime(start_date, tz)
+            else:
+                start = start_date
+        else:
+            start = EWSDateTime.now(tz=tz)
+        
+        if end_date:
+            if isinstance(end_date, str):
+                end = parse_datetime(end_date, tz)
+            else:
+                end = end_date
+        else:
+            end = start + timedelta(days=365)  # Год вперед
+        
+        # Поиск по теме (основной поиск)
+        items = calendar.filter(
+            start__gte=start,
+            start__lte=end,
+            subject__contains=query
+        ).order_by('start')[:limit]
+        
+        print(f"\n🔍 Результаты поиска '{query}':\n")
+        print(f"{'Дата/Время':<25} {'Тема':<50}")
+        print("-" * 75)
+        
+        count = 0
+        for item in items:
+            start_str = item.start.strftime('%Y-%m-%d %H:%M') if item.start else 'N/A'
+            subject = (item.subject[:47] + '...') if item.subject and len(item.subject) > 50 else (item.subject or '(без темы)')
+            print(f"{start_str:<25} {subject:<50}")
+            count += 1
+        
+        if count == 0:
+            print("События не найдены.")
+        
+        return list(items)
+        
+    except Exception as e:
+        print(f"❌ Ошибка при поиске: {e}")
+        return []
+
 def test_connection(config):
     """Тестирует подключение с разными вариантами аутентификации."""
     print("\n🔍 Тестирование подключения...\n")
@@ -368,12 +575,19 @@ def main():
         print(f"  {sys.argv[0]} read [--index N] [--id EMAIL_ID] [--folder inbox|sent|drafts]")
         print(f"  {sys.argv[0]} send --to EMAIL --subject 'SUBJECT' --body 'BODY' [--attach FILE] [--cc EMAIL] [--bcc EMAIL]")
         print(f"  {sys.argv[0]} search --query 'QUERY' [--limit N] [--folder inbox|sent]")
+        print(f"\n📅 Календарь:")
+        print(f"  {sys.argv[0]} calendar [--limit N] [--start DATE] [--end DATE]")
+        print(f"  {sys.argv[0]} calendar-create --subject 'SUBJECT' --start 'YYYY-MM-DD HH:MM' --end 'YYYY-MM-DD HH:MM' [--attendees EMAIL1,EMAIL2] [--body 'BODY'] [--location 'LOCATION']")
+        print(f"  {sys.argv[0]} calendar-search --query 'QUERY' [--limit N] [--start DATE] [--end DATE]")
         print("\nПримеры:")
         print(f"  {sys.argv[0]} test  # протестировать подключение")
         print(f"  {sys.argv[0]} list --limit 5")
         print(f"  {sys.argv[0]} read --index 0")
         print(f"  {sys.argv[0]} send --to 'user@example.com' --subject 'Test' --body 'Hello'")
         print(f"  {sys.argv[0]} search --query 'важно'")
+        print(f"  {sys.argv[0]} calendar --limit 10")
+        print(f"  {sys.argv[0]} calendar-create --subject 'Встреча' --start '2025-12-24 09:00' --end '2025-12-24 10:00' --attendees 'user@example.com'")
+        print(f"  {sys.argv[0]} calendar-search --query 'Profitbase'")
         sys.exit(1)
     
     # Загружаем конфигурацию
@@ -511,6 +725,104 @@ def main():
             sys.exit(1)
         
         search_emails(account, query, limit=limit, folder=folder)
+    
+    elif command == 'calendar':
+        limit = 10
+        start_date = None
+        end_date = None
+        
+        if '--limit' in args:
+            idx = args.index('--limit')
+            if idx + 1 < len(args):
+                limit = int(args[idx + 1])
+        
+        if '--start' in args:
+            idx = args.index('--start')
+            if idx + 1 < len(args):
+                start_date = args[idx + 1]
+        
+        if '--end' in args:
+            idx = args.index('--end')
+            if idx + 1 < len(args):
+                end_date = args[idx + 1]
+        
+        list_calendar(account, limit=limit, start_date=start_date, end_date=end_date)
+    
+    elif command == 'calendar-create':
+        subject = None
+        start_time = None
+        end_time = None
+        attendees = None
+        body = None
+        location = None
+        
+        if '--subject' in args:
+            idx = args.index('--subject')
+            if idx + 1 < len(args):
+                subject = args[idx + 1]
+        
+        if '--start' in args:
+            idx = args.index('--start')
+            if idx + 1 < len(args):
+                start_time = args[idx + 1]
+        
+        if '--end' in args:
+            idx = args.index('--end')
+            if idx + 1 < len(args):
+                end_time = args[idx + 1]
+        
+        if '--attendees' in args:
+            idx = args.index('--attendees')
+            if idx + 1 < len(args):
+                attendees = [email.strip() for email in args[idx + 1].split(',')]
+        
+        if '--body' in args:
+            idx = args.index('--body')
+            if idx + 1 < len(args):
+                body = args[idx + 1]
+        
+        if '--location' in args:
+            idx = args.index('--location')
+            if idx + 1 < len(args):
+                location = args[idx + 1]
+        
+        if not subject or not start_time or not end_time:
+            print("❌ Ошибка: Укажите --subject, --start и --end")
+            sys.exit(1)
+        
+        create_meeting(account, subject, start_time, end_time, attendees=attendees, body=body, location=location)
+    
+    elif command == 'calendar-search':
+        query = None
+        limit = 10
+        start_date = None
+        end_date = None
+        
+        if '--query' in args:
+            idx = args.index('--query')
+            if idx + 1 < len(args):
+                query = args[idx + 1]
+        
+        if '--limit' in args:
+            idx = args.index('--limit')
+            if idx + 1 < len(args):
+                limit = int(args[idx + 1])
+        
+        if '--start' in args:
+            idx = args.index('--start')
+            if idx + 1 < len(args):
+                start_date = args[idx + 1]
+        
+        if '--end' in args:
+            idx = args.index('--end')
+            if idx + 1 < len(args):
+                end_date = args[idx + 1]
+        
+        if not query:
+            print("❌ Ошибка: Укажите --query")
+            sys.exit(1)
+        
+        search_calendar(account, query, limit=limit, start_date=start_date, end_date=end_date)
     
     else:
         print(f"❌ Неизвестная команда: {command}")
