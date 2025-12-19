@@ -17,6 +17,18 @@ import json
 from pathlib import Path
 from datetime import datetime, timedelta
 
+# Для работы с часовыми поясами
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    # Для Python < 3.9 используем pytz
+    try:
+        import pytz
+        ZoneInfo = pytz.timezone
+    except ImportError:
+        print("⚠️  Для работы с часовыми поясами установите pytz: pip3 install pytz")
+        ZoneInfo = None
+
 # Проверка наличия библиотеки exchangelib
 try:
     from exchangelib import Credentials, Account, Message, Mailbox, FileAttachment
@@ -318,6 +330,30 @@ def search_emails(account, query, limit=10, folder='inbox'):
         print(f"❌ Ошибка при поиске: {e}")
         return []
 
+def convert_to_almaty_time(ews_datetime):
+    """Конвертирует EWSDateTime в часовой пояс Алматы (UTC+6)."""
+    if not ews_datetime:
+        return None
+    
+    try:
+        # Получаем часовой пояс Алматы
+        almaty_tz = ZoneInfo('Asia/Almaty')
+        
+        # EWSDateTime наследуется от datetime и имеет метод astimezone
+        # Просто используем его напрямую - это самый надежный способ
+        if hasattr(ews_datetime, 'astimezone'):
+            try:
+                dt = ews_datetime.astimezone(almaty_tz)
+                return dt
+            except Exception as e:
+                # Если astimezone не работает, возвращаем исходное время
+                return ews_datetime
+        
+        return ews_datetime
+    except Exception as e:
+        # Если конвертация не удалась, возвращаем исходное время
+        return ews_datetime
+
 def parse_datetime(date_str, default_timezone=None):
     """Парсит строку даты в EWSDateTime."""
     try:
@@ -401,7 +437,20 @@ def list_calendar(account, limit=10, start_date=None, end_date=None):
         
         count = 0
         for item in items:
-            start_str = item.start.strftime('%Y-%m-%d %H:%M') if item.start else 'N/A'
+            # Конвертируем время в часовой пояс Алматы
+            if item.start:
+                try:
+                    # Получаем часовой пояс Алматы
+                    almaty_tz = ZoneInfo('Asia/Almaty')
+                    # EWSDateTime всегда timezone-aware, конвертируем напрямую
+                    almaty_time = item.start.astimezone(almaty_tz)
+                    start_str = almaty_time.strftime('%Y-%m-%d %H:%M')
+                except Exception as e:
+                    # Если конвертация вызвала ошибку, используем исходное время
+                    start_str = item.start.strftime('%Y-%m-%d %H:%M') if hasattr(item.start, 'strftime') else str(item.start)
+            else:
+                start_str = 'N/A'
+            
             subject = (item.subject[:47] + '...') if item.subject and len(item.subject) > 50 else (item.subject or '(без темы)')
             
             # Участники
@@ -509,7 +558,20 @@ def search_calendar(account, query, limit=10, start_date=None, end_date=None):
         
         count = 0
         for item in items:
-            start_str = item.start.strftime('%Y-%m-%d %H:%M') if item.start else 'N/A'
+            # Конвертируем время в часовой пояс Алматы
+            if item.start:
+                try:
+                    # Получаем часовой пояс Алматы
+                    almaty_tz = ZoneInfo('Asia/Almaty')
+                    # EWSDateTime всегда timezone-aware, конвертируем напрямую
+                    almaty_time = item.start.astimezone(almaty_tz)
+                    start_str = almaty_time.strftime('%Y-%m-%d %H:%M')
+                except Exception as e:
+                    # Если конвертация вызвала ошибку, используем исходное время
+                    start_str = item.start.strftime('%Y-%m-%d %H:%M') if hasattr(item.start, 'strftime') else str(item.start)
+            else:
+                start_str = 'N/A'
+            
             subject = (item.subject[:47] + '...') if item.subject and len(item.subject) > 50 else (item.subject or '(без темы)')
             print(f"{start_str:<25} {subject:<50}")
             count += 1
